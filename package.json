@@ -1,0 +1,16 @@
+{
+  "name": "rimg",
+  "version": "1.0.0",
+  "description": "Get images from reddit",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "image",
+    "scraping",
+    "reddit"
+  ],
+  "author": "btroo (Brandon Truong)",
+  "license": "MIT"
+}
