@@ -28,35 +28,49 @@ c
 
 c.parse(process.argv);
 
-function downloadImage(uri, destination, callback){
+function downloadImage(uri, destination, image, callback){
 	request.head(uri, function(err, res, body){
 		if(res){
-	    request(uri).pipe(fs.createWriteStream(destination)).on('close', callback);
+			console.log('content-type:', res.headers['content-type']);
+	    console.log('content-length:', res.headers['content-length']);
+			if(image && res.headers['content-type'].indexOf('image') != -1){
+				request(uri).pipe(fs.createWriteStream(destination)).on('close', callback);
+			}
+			else callback();
   	}
   });
 }
-
-var cookieJar = request.jar();
-var h = "ll";
 
 function scrapeURL(url, destination, count){
 	mkdirp('./' + destination, function(err){
 		url = (url.indexOf('http') == -1) ? reddit + url : url;
 		var options = {}; 
 		options.url = url;
+
+		// Scrapes images out. 
 		request(options, function(error, response, body){
 			$ = cheerio.load(body);
+			var current = 0;
 			$('a.title.may-blank').each(function(index, item){
+				
 				var imglocation = $(item).attr('href');
 				var filename = imglocation.split('/').slice(-1).pop();
+				var image = false;
+				
 				if(filename.indexOf('.jpg') != -1 || filename.indexOf('.gif') != -1){
-					downloadImage(imglocation, destination + '/' + filename, function(){
-						console.log('downloaded: ' + filename);
-						if(index == 25 && count > 1) {
-							scrapeURL(url, destination, count - 1);
-						}
-					});
-				}
+					image = true;
+				} 
+
+				downloadImage(imglocation, destination + '/' + filename, image, function(){
+					console.log('downloaded: ' + filename);
+					current++;
+					console.log(current);
+					if(current == 25) {
+						url = $('.nextprev a').attr('href');
+						console.log(url);
+						scrapeURL(url, destination, count - 1);
+					}
+				});
 			})
 		});
 	});
