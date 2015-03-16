@@ -13,15 +13,17 @@ var http = require('http'),
 		fs = require('fs'),
 		mkdirp = require('mkdirp');
 
+var reddit = 'http://reddit.com/r/';
+
 c
 	.version('0.0.1')
 	.command('scrape <url> <destination>')
 	.action(function(url, destination){
-		scrapeURL(url, destination)
+		scrapeURL(url, destination, 1);
 	})
-	.command('scrape <subreddit> <count>')
-	.action(function(subreddit, count){
-
+	.command('scrape <subreddit> <destination> <count>')
+	.action(function(subreddit, destination, count){
+		scrapeURL(subreddit, destination, count);
 	});
 
 c.parse(process.argv);
@@ -34,17 +36,25 @@ function downloadImage(uri, destination, callback){
   });
 }
 
-function scrapeURL(url, destination){
-	mkdirp('./' + destination, function(err){
-		request(url, function(error, response, body){
-			$ = cheerio.load(body);
+var cookieJar = request.jar();
+var h = "ll";
 
+function scrapeURL(url, destination, count){
+	mkdirp('./' + destination, function(err){
+		url = (url.indexOf('http') == -1) ? reddit + url : url;
+		var options = {}; 
+		options.url = url;
+		request(options, function(error, response, body){
+			$ = cheerio.load(body);
 			$('a.title.may-blank').each(function(index, item){
 				var imglocation = $(item).attr('href');
 				var filename = imglocation.split('/').slice(-1).pop();
-				if(filename.indexOf('.jpg') != -1){
+				if(filename.indexOf('.jpg') != -1 || filename.indexOf('.gif') != -1){
 					downloadImage(imglocation, destination + '/' + filename, function(){
 						console.log('downloaded: ' + filename);
+						if(index == 25 && count > 1) {
+							scrapeURL(url, destination, count - 1);
+						}
 					});
 				}
 			})
