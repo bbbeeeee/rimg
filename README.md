@@ -9,7 +9,7 @@ npm install -g rimg
 ## Usage
 To scrape one page of reddit:
 ```
-rimg scrape [reddit-url] [destination-folder-name]
+rimg scrape [reddit-url or subreddit] [destination] [count]
 ```
 
 ## License
