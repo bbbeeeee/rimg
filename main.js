@@ -17,22 +17,17 @@ var reddit = 'http://reddit.com/r/';
 
 c
 	.version('0.0.1')
-	.command('scrape <url> <destination>')
-	.action(function(url, destination){
-		scrapeURL(url, destination, 1);
+	.command('scrape <url> <destination> <count>')
+	.action(function(url, destination, count){
+		scrapeURL(url, destination, count);
 	})
-	.command('scrape <subreddit> <destination> <count>')
-	.action(function(subreddit, destination, count){
-		scrapeURL(subreddit, destination, count);
-	});
 
 c.parse(process.argv);
 
 function downloadImage(uri, destination, image, callback){
 	request.head(uri, function(err, res, body){
+		// Validates if content is an image
 		if(res){
-			console.log('content-type:', res.headers['content-type']);
-	    console.log('content-length:', res.headers['content-length']);
 			if(image && res.headers['content-type'].indexOf('image') != -1){
 				request(uri).pipe(fs.createWriteStream(destination)).on('close', callback);
 			}
@@ -42,49 +37,46 @@ function downloadImage(uri, destination, image, callback){
 }
 
 function scrapeURL(url, destination, count){
+	if(count == -1) return;
+
 	mkdirp('./' + destination, function(err){
 		url = (url.indexOf('http') == -1) ? reddit + url : url;
 		var options = {}; 
 		options.url = url;
+		
+		console.log("Scraping " + url);
 
-		// Scrapes images out. 
+		// Scrapes images out
 		request(options, function(error, response, body){
 			$ = cheerio.load(body);
 			var current = 0;
+
+			var nextUrl = ($('.nextprev a').eq(1).attr('href') != undefined) ?
+				$('.nextprev a').eq(1).attr('href') : $('.nextprev a').attr('href');
+
 			$('a.title.may-blank').each(function(index, item){
 				
 				var imglocation = $(item).attr('href');
 				var filename = imglocation.split('/').slice(-1).pop();
 				var image = false;
 				
-				if(filename.indexOf('.jpg') != -1 || filename.indexOf('.gif') != -1){
+				if(filename.indexOf('.jpg') != -1 ||
+				   filename.indexOf('.gif') != -1 ||
+				   filename.indexOf('.png') != -1){
 					image = true;
 				} 
 
 				downloadImage(imglocation, destination + '/' + filename, image, function(){
-					console.log('downloaded: ' + filename);
 					current++;
 					console.log(current);
 					if(current == 25) {
-						url = $('.nextprev a').attr('href');
-						console.log(url);
-						scrapeURL(url, destination, count - 1);
+						scrapeURL(nextUrl, destination, count - 1);
 					}
 				});
 			})
 		});
 	});
 }
-
-// var c = new Crawler({
-// 	maxConnections: 5,
-// 	callback: function(error, result, $){
-// 		$('a.title.may-blank').each(function(index, a){
-// 			// get each image and save it in designated directory.	
-// 		});
-// 	}
-// });
-
 
 
 
